@@ -1,0 +1,410 @@
+openapi: 3.0.0
+info:
+  title: Service Request API
+  description: 'Manage service requests'
+  version: 1.0.0
+servers:
+  - url: 'http://ifm.sodexo.com/api/v1'
+# tags:
+#   - name: Service Request
+#     description: Manage service requests
+paths:
+  /servicerequest:
+    post:
+      tags:
+        - service request
+      summary: 'Create a new service request'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+      responses:
+        '200':
+          description: 'service request created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/list:
+    get:
+      tags:
+        - list
+      summary: 'List Service Requests for the given userid'      
+      parameters:
+        - in: query
+          name: userid
+          required: true
+          schema:
+            type: string
+          description: Email address of user to find related service requests for
+        - in: query
+          name: lastdays 
+          required: false
+          schema:
+            type: integer
+          description: 'Number of days to return cancelled or resolved service requests for. If not provided, cancelled and resolved service requests are not returned.'
+      responses:
+        '200':
+          description: 'service requests returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestList'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/site:
+    get:
+      tags:
+        - site
+      summary: 'Return sites for a contract'
+      parameters:
+        - in: query
+          name: contract
+          required: true
+          schema:
+            type: string
+          description: external contract
+      responses:
+        '200':
+          description: 'sites returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/location:
+    get:
+      tags:
+        - location
+      summary: 'Return locations for a site/contract'
+      parameters:
+        - in: query
+          name: contract
+          required: true
+          schema:
+            type: string
+          description: external contract
+        - in: query
+          name: site
+          required: true
+          schema:
+            type: string
+          description: site code
+      responses:
+        '200':
+          description: 'locations returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/externalservicecatalogue:
+    get:
+      tags:
+        - external service catalogue
+      summary: 'Return available external service catalogue'
+      responses:
+        '200':
+          description: 'external service catalogue returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalServiceCatalogueResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/servicecatalogue:
+    get:
+      tags:
+        - service catalogue
+      summary: 'Return service catalogues for a site'
+      parameters:
+        - in: query
+          name: contract
+          required: true
+          schema:
+            type: string
+          description: external contract
+        - in: query
+          name: site
+          required: true
+          schema:
+            type: string
+          description: site code
+      responses:
+        '200':
+          description: 'service catalogue returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCatalogueResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'  
+components:
+  schemas:
+    Value:
+      type: object
+      properties:
+        description:
+          type: string
+        subject:
+          type: string
+    Log:
+      type: object
+      properties:
+        name:
+          type: string		
+        value:
+          $ref: '#/components/schemas/Value'
+    Contact:
+      type: object
+      required:
+        - id
+        - lastName
+        - email
+        - siteCode
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        siteCode:
+          type: string
+        mobile:
+          type: string
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Log'
+    Site:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+    Location:
+      type: object
+      properties:
+        code:
+          type: string
+        level:
+          type: integer
+        parent:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+    ExternalServiceCategory:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+    ServiceCategory:
+      type: object
+      properties:
+        code:
+          type: string
+        level:
+          type: integer
+        parent:
+          type: string
+        description:
+          type: string
+    Attachment:
+      type: object
+      required:
+        - fileName
+        - mediaType
+        - data
+      properties:
+        fileName:
+          type: string
+        mediaType:
+          type: string
+        data:
+          type: string
+    Note:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        noteId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        attachment:
+          $ref: '#/components/schemas/Attachment'
+    ServiceRequest:
+      type: object
+      required:
+        - externalIdentifier      
+        - externalServiceCategory      
+        - reportedBy      
+        - affectedPerson      
+        - siteCode      
+        - locationCode      
+        - priority      
+        - requestType      
+        - title      
+      properties:
+        externalIdentifier:
+          type: string
+        externalServiceCategory:
+          type: string
+        reportedBy:
+          $ref: '#/components/schemas/Contact'
+        affectedPerson:
+          $ref: '#/components/schemas/Contact'
+        siteCode:
+          type: string
+        locationCode:
+          type: string
+        priority:
+          type: integer
+        requestType:
+          type: string
+          enum:
+            - request
+            - information
+        title:
+          type: string
+        description:
+          type: string
+        createdOn:
+          type: string
+        identifier:
+          type: string
+        status:
+          type: string
+        statusComment:
+          type: string
+        serviceCategoryCode:
+          type: string
+        serviceCategory:
+          $ref: '#/components/schemas/ServiceCategory'
+        site:
+          $ref: '#/components/schemas/Site'
+        location:
+          $ref: '#/components/schemas/Location'
+        property:
+          $ref: '#/components/schemas/Location'
+        firstResponseFailureTime:
+          type: string
+          format: date-time
+          description: "First response required by SLA date time"
+        resolveByFailureTime:
+          type: string
+          format: date-time
+          description: "Resolution required by SLA date time"
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        dueDate:
+          type: string
+          format: date-time
+          description: "Resolution time set by the external system"
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Log'
+    ServiceRequestList:
+      type: object
+      properties:
+        serviceRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequest'
+    SiteLocationRequest:
+      type: object
+      properties:
+        contract:
+          type: string
+        site:
+          type: string
+    ServiceRequestResponse:
+      type: object
+      properties:
+        identifier:
+          type: string
+        externalIdentifier:
+          type: string
+    SiteResponse:
+      type: object
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: '#/components/schemas/Site'
+    LocationResponse:
+      type: object
+      properties:
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+    ExternalServiceCatalogueResponse:
+      type: object
+      properties:
+        serviceCatalogues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalServiceCategory'
+    ServiceCatalogueResponse:
+      type: object
+      properties:
+        serviceCatalogues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCategory'
+    ErrorResponse:
+      type: object
+      properties:
+        Message:
+          type: string
+        ExceptionMessage:
+          type: string        
+        ExceptionType:
+          type: string        
+        Detail:
+          type: string
+	  
