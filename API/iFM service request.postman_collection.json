@@ -1,0 +1,145 @@
+{
+	"variables": [],
+	"info": {
+		"name": "iFM service request",
+		"_postman_id": "c587c8df-3f9b-fdd9-b9fc-bb16e36c6f40",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "get sites",
+			"request": {
+				"url": {
+					"raw": "https://proxy.{{environment-key}}.api.ifm.sodexonet.com/api/v1/servicerequest/site?contract=SANOFI",
+					"protocol": "https",
+					"host": [
+						"proxy",
+						"{{environment-key}}",
+						"api",
+						"ifm",
+						"sodexonet",
+						"com"
+					],
+					"path": [
+						"api",
+						"v1",
+						"servicerequest",
+						"site"
+					],
+					"query": [
+						{
+							"key": "contract",
+							"value": "SANOFI",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{sanofi-subscription-key}}",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get locations",
+			"request": {
+				"url": {
+					"raw": "https://proxy.{{environment-key}}.api.ifm.sodexonet.com/api/v1/servicerequest/location?contract=SANOFI&site=SNBRIDG",
+					"protocol": "https",
+					"host": [
+						"proxy",
+						"{{environment-key}}",
+						"api",
+						"ifm",
+						"sodexonet",
+						"com"
+					],
+					"path": [
+						"api",
+						"v1",
+						"servicerequest",
+						"location"
+					],
+					"query": [
+						{
+							"key": "contract",
+							"value": "SANOFI",
+							"equals": true,
+							"description": ""
+						},
+						{
+							"key": "site",
+							"value": "SNBRIDG",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{sanofi-subscription-key}}",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get external service catalogue",
+			"request": {
+				"url": "https://proxy.{{environment-key}}.api.ifm.sodexonet.com/api/v1/servicerequest/externalservicecatalogue",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{sanofi-subscription-key}}",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "create service request",
+			"request": {
+				"url": "https://proxy.{{environment-key}}.api.ifm.sodexonet.com/api/v1/servicerequest",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{sanofi-subscription-key}}",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"externalIdentifier\": \"SR-TEST-DAN-SNOW-02\",\r\n  \"externalServiceCategory\": \"HS9105\",\r\n  \"reportedBy\": {\r\n    \"id\": \"malcom.x@test.com\",\r\n    \"firstName\": \"Malcom\",\r\n    \"lastName\": \"Xeta\",\r\n    \"email\": \"malcom.x@test.com\",\r\n    \"siteCode\": \"SNWALTH\",\r\n    \"mobile\": \"\"\r\n  },\r\n  \"affectedPerson\": {\r\n    \"id\": \"malcom.x@test.com\",\r\n    \"firstName\": \"Malcom\",\r\n    \"lastName\": \"Xeta\",\r\n    \"email\": \"malcom.x@test.com\",\r\n    \"siteCode\": \"SNWALTH\",\r\n    \"mobile\": \"7773776621\"\r\n  },\r\n  \"siteCode\": \"SNWALTH\",\r\n  \"locationCode\": \"BLDGA\",\r\n  \"priority\": 0,\r\n  \"requestType\": \"request\",\r\n  \"title\": \"test create\",\r\n  \"description\": \"from postman\",\r\n  \"createdOn\": \"2018-05-16 13:12:48\"\r\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
