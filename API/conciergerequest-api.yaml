@@ -1,0 +1,345 @@
+openapi: 3.0.0
+info:
+  title: Concierge Request API
+  description: 'Api to raise concierge type of requests to Circles'
+  version: 1.0.0
+servers:
+  - url: '<something>'
+paths:
+  /products:
+    get:
+      tags:
+        - Products Info
+      summary: 'Retrieve list of product'
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+          description: authorization token
+        - in: query
+          name: serviceFamily
+          schema:
+            type: string
+          description: Group of services by activity sector
+        - in: query
+          name: service
+          schema:
+            type: string
+          description: Service name
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Service category
+        - in: query
+          name: productType
+          schema:
+            type: string
+          description: Product type - ['Product', 'Customer_Service', 'Service_Information', 'External_link']
+        - in: query
+          name: searchText
+          schema:
+            type: string
+          description: Keyword search
+        - in: query
+          name: lang
+          schema:
+            type: string
+          description: Language to use in query
+      responses:
+        '200':
+          description: 'Products information retrieved'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: An error has occured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /orders:
+    get:
+      tags:
+        - Order Info
+      summary: 'Retrieve orders for customer'
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+          description: authorization token
+        - in: query
+          name: request_number
+          schema:
+            type: string
+          description: Order request Id
+      responses:
+        '200':
+          description: 'Order information retrieved'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrderResponse'
+        '400':
+          description: An error has occured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /orders/place:
+    post:
+      tags:
+        - Place Order
+      summary: 'Place order'
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+          description: authorization token
+      requestBody:
+        content: 
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '200':
+          description: 'Order placed successfully'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOrderResponse'
+        '400':
+          description: An error has occured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    Oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://test.com
+          scopes: {}
+  schemas:
+    Customer:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - siteCode
+        - mobile
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        siteCode:
+          type: string
+        mobile:
+          type: string
+    FormRequest:
+      type: object
+      properties:
+        value:
+          type: string
+        sortOrder:
+          type: integer
+        required:
+          type: boolean
+        question:
+          type: string
+        inputType:
+          type: string
+    FormQuestion:
+      type: object
+      required:
+        - questionLabel
+        - questionValue
+      properties:
+        questionLabel:
+          type: string
+        questionValue:
+          type: string
+    RequestPayment:
+      type: object
+      required:
+        - reference
+        - partnerRef
+        - status
+      properties:
+        reference:
+          type: string
+        partnerRef:
+          type: string
+        status:
+          type: string
+    ServiceProduct:
+      type: object
+      properties:
+        vatRate:
+          type: string
+        serviceFamily:
+          type: string
+        service:
+          type: string
+        reference:
+          type: string
+        productTYpe:
+          type: string
+        price:
+          type: number
+        onlyAvailableOnSite:
+          type: boolean
+        name:
+          type: string
+        longDescription:
+          type: string
+        imageUrl:
+          type: string
+        formRequest:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormRequest'
+        formattedPrice:
+          type: string
+        formattedDiscountPrice:
+          type: string
+        externalUrl:
+          type: string
+        discountPrice:
+          type: number
+        description:
+          type: string
+        category:
+          type: string
+    OrderItem:
+      type: object
+      required:
+        - reference
+        - name
+        - unitPrice
+        - quantity
+      properties:
+        reference:
+          type: string
+        name:
+          type: string
+        unitPrice:
+          type: number
+        quantity:
+          type: number
+        comment:
+          type: string
+    CustomRequest:
+      type: object
+      required:
+        - requestTitle
+      properties:
+        requestTitle:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormQuestion'
+    Order:
+      type: object
+      required:
+        - orderItems
+        - requestNumber
+        - requestType
+        - status
+        - paymentStatus
+        - createdDate
+        - closedDate
+        - total
+        - totalCurrency
+        - subject
+        - origin
+      properties:
+        OrderItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        CustomRequest:
+          $ref: '#/components/schemas/CustomRequest' 
+        requestNumber:
+          type: integer
+        requestType:
+          type: string
+        status:
+          type: string
+        paymentStatus:
+          type: string
+        createdDate:
+          type: string
+        closedDate:
+          type: string
+        total:
+          type: integer
+        totalCurrency:
+          type: string
+        subject:
+          type: string
+        origin:
+          type: string
+    RequestForm:
+      type: object
+      required:
+        - requestCode
+        - questions
+      properties:
+        requestCode:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormQuestion'
+    PlaceOrderRequest:
+      type: object
+      properties:
+        customer_info:
+          $ref: '#/components/schemas/Customer'
+        order_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        request_form:
+          $ref: '#/components/schemas/RequestForm'
+        request_payment:
+          $ref: '#/components/schemas/RequestPayment'
+        request_reference:
+          type: string
+    PlaceOrderResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        requestNumber:
+          type: string
+    GetOrderResponse:
+      $ref: '#/components/schemas/Order'
+    ProductResponse:
+      $ref: '#/components/schemas/ServiceProduct'
+    ErrorResponse:
+      type: object
+      properties:
+        Message:
+          type: string
+        ExceptionMessage:
+          type: string        
+        ExceptionType:
+          type: string        
+        Detail:
+          type: string
