@@ -1,0 +1,114 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using Microsoft.Xrm.Sdk;
+using Sodexo.iFM.Plugins.Manager;
+using Sodexo.iFM.Shared.EntityController;
+namespace Sodexo.iFM.Plugins.PluginSteps.ServiceRequest
+{
+    public class ServiceRequestNotifications : PluginBase
+    {
+        public ServiceRequestNotifications(string unsecureConfiguration, string secureConfiguration)
+            : base(typeof(ServiceRequestNotifications))
+        {
+
+        }
+        protected override void ExecuteCdsPlugin(ILocalPluginContext localPluginContext)
+        {
+            #region PreChecks
+            if (localPluginContext == null)
+            {
+                throw new ArgumentNullException("localContext");
+            }
+
+            var Entitytarget = localPluginContext.TargetEntity;
+            if (Entitytarget == null)
+            {
+                throw new NullReferenceException($"{ nameof(Entitytarget) } is null.");
+            }
+
+            if (localPluginContext.CurrentUserService == null)
+            {
+                throw new NullReferenceException("Organization service is null.");
+            }
+
+            Entity EntityPostImage = localPluginContext.PostImage;
+
+            Entity EntityPreImage = localPluginContext.PreImage;
+
+            if (EntityPostImage == null)
+            {
+                throw new NullReferenceException($"{ nameof(EntityPostImage) } is null.");
+            }
+            #endregion PreChecks
+
+            string TraceMessage = "Plugin:ServiceRequestNotification|";
+            if (EntityPostImage == null)
+                TraceMessage += "Post Image: Null|";
+
+            if (Entitytarget.LogicalName != ServiceRequestRecord.logicalName)
+            {
+                TraceMessage += "|EntityName: " + Entitytarget.LogicalName + "|";
+                localPluginContext.Trace(TraceMessage);
+                return;
+            }
+
+
+            if (EntityPostImage.Contains("ifm_workorderid") && EntityPreImage.Contains("ifm_workorderid"))
+            {
+                EntityReference postValue = (EntityReference)EntityPostImage["ifm_workorderid"];
+                EntityReference preValue = (EntityReference)EntityPreImage["ifm_workorderid"];
+
+                if (postValue.Id == preValue.Id)
+                {
+                    TraceMessage += "|Pre Image & Post Image - Same|";
+                    localPluginContext.Trace(TraceMessage);
+                    return;
+                }
+            }
+
+            //Mal 40: Check 1: Event code Sr action on Change of Workorder Id
+            //Check 2: Only for one contract
+            if (Entitytarget.Contains("ifm_workorderid"))
+            {
+                TraceMessage += "SR: " + Entitytarget.Id + "|";
+
+                OptionSetValue eventCode = new OptionSetValue((int)ContractNotificationConfigurationsRecord.EventCodeEnum.SRAction);
+                TraceMessage += "EventCode: " + eventCode.Value + "|";
+
+                ServiceRequestRecord.RequestTypeEnum requestType = ServiceRequestRecord.RequestTypeEnum.Null;
+                if (EntityPostImage.Contains("ifm_requesttypecode"))
+                {
+                    requestType = ((ServiceRequestRecord.RequestTypeEnum)((OptionSetValue)EntityPostImage["ifm_requesttypecode"]).Value);
+                }
+
+                TraceMessage += "Service Request Type: " + requestType.ToString() + "|";
+                if (requestType != ServiceRequestRecord.RequestTypeEnum.ServiceRequest)
+                {
+                    localPluginContext.Trace(TraceMessage);
+                    return;
+                }
+
+                EmailNotificationManager sendEmailNotifications = new EmailNotificationManager(localPluginContext);
+                localPluginContext.Trace(TraceMessage);
+                try
+                {  
+                    //SQ48B: Adding check condition to see if user is opted to receieve notification or not 
+                    TraceMessage += "RecieveNotification: " + EntityPostImage.GetAttributeValue<bool>("ifm_receivenotifications").ToString() + "|";
+                    if (EntityPostImage.Contains("ifm_receivenotifications") && (bool)EntityPostImage.Attributes["ifm_receivenotifications"] == true)
+                    {
+                        sendEmailNotifications.LoadRegardingRecord(EntityPostImage, eventCode);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    localPluginContext.Trace(TraceMessage + "|" + ex.Message);
+                    throw new InvalidPluginExecutionException(ex.Message, ex);
+                }
+            }
+        }
+    }
+}
