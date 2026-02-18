@@ -1,0 +1,64 @@
+using Microsoft.Xrm.Sdk;
+using Sodexo.iFM.Plugins.Manager;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Sodexo.iFM.Plugins.PluginSteps.WorkOrder
+{
+    public class PostWorkOrderCreateAsync : PluginBase
+    {
+        public PostWorkOrderCreateAsync(string unsecureConfiguration, string secureConfiguration)
+            : base(typeof(PostWorkOrderCreateAsync))
+        {
+
+        }
+
+        protected override void ExecuteCdsPlugin(ILocalPluginContext localPluginContext)
+        {
+           
+            #region PreChecks
+            if (localPluginContext == null)
+            {
+                throw new ArgumentNullException("localContext");
+            }
+
+            var Entitytarget = localPluginContext.TargetEntity;
+            if (Entitytarget == null)
+            {
+                throw new NullReferenceException($"{ nameof(Entitytarget) } is null.");
+            }
+
+            if (localPluginContext.CurrentUserService == null)
+            {
+                throw new NullReferenceException("Organization service is null.");
+            }
+            #endregion PreChecks
+
+            string TraceMessage = "Plugin:PostWorkOrderCreateAsync & Depth - " + localPluginContext.PluginExecutionContext.Depth + "|";
+
+            // Commented this code to to share the work order when it is created from agreement (Production defect fix)
+            //if (localPluginContext.PluginExecutionContext.Depth > 2)
+            //{
+            //    TraceMessage += "|Depth reached more than 2|";
+            //    localPluginContext.Trace(TraceMessage);
+            //    return;
+            //}
+
+            WorkOrderManager manager = new WorkOrderManager(localPluginContext);
+            try
+            {
+                TraceMessage += "|Regarding WO: " + Entitytarget.Id + "|";
+                manager.runAsyncShareWO(null, null, Entitytarget);
+                localPluginContext.Trace(TraceMessage + manager.TraceMessage);
+            }
+            catch (Exception ex)
+            {
+                localPluginContext.Trace(TraceMessage + manager.TraceMessage + ex.Message);
+                throw new InvalidPluginExecutionException(ex.Message, ex);
+            }
+        }
+    }
+}
