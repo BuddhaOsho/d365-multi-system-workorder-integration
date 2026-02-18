@@ -97,4 +97,12 @@ JSON Transformation
 Correlation Filters
  
 OAuth 2.0 Authentication
+
+Details:
+/architecture        → High-level architecture explanation
+/plugin              → Sample Dynamics 365 plugin implementation
+/sample-payload      → Example JSON message structure
+/logicapp-definition → Logic App processing overview
+ 
+This repository demonstrates an event-driven enterprise integration pattern using Azure Service Bus Topics and Logic Apps for multi-system Work Order synchronization.
  
