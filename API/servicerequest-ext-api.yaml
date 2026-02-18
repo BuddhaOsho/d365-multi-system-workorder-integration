@@ -1,0 +1,289 @@
+openapi: 3.0.0
+info:
+  title: Service Request API
+  description: 'Manage service requests'
+  version: 1.0.0
+servers:
+  - url: 'http://ifm.sodexo.com/api/v1'
+# tags:
+#   - name: Service Request
+#     description: Manage service requests
+paths:
+  /servicerequest:
+    post:
+      tags:
+        - service request
+      summary: 'Create a new service request'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+      responses:
+        '200':
+          description: 'service request created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/site:
+    get:
+      tags:
+        - site
+      summary: 'Return sites for a contract'
+      parameters:
+        - in: query
+          name: contract
+          required: true
+          schema:
+            type: string
+          description: external contract
+      responses:
+        '200':
+          description: 'sites returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/location:
+    get:
+      tags:
+        - location
+      summary: 'Return locations for a site/contract'
+      parameters:
+        - in: query
+          name: contract
+          required: true
+          schema:
+            type: string
+          description: external contract
+        - in: query
+          name: site
+          required: true
+          schema:
+            type: string
+          description: site code
+      responses:
+        '200':
+          description: 'locations returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /servicerequest/externalservicecatalogue:
+    get:
+      tags:
+        - external service catalogue
+      summary: 'Return available external service catalogue'
+      responses:
+        '200':
+          description: 'external service catalogue returned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalServiceCatalogueResponse'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    Contact:
+      type: object
+      required:
+        - id
+        - lastName
+        - email
+        - siteCode
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        siteCode:
+          type: string
+        mobile:
+          type: string
+    Site:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+    Location:
+      type: object
+      properties:
+        code:
+          type: string
+        level:
+          type: integer
+        parent:
+          type: string
+        description:
+          type: string
+    ExternalServiceCategory:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+    Attachment:
+      type: object
+      required:
+        - fileName
+        - mediaType
+        - data
+      properties:
+        fileName:
+          type: string
+        mediaType:
+          type: string
+          enum:
+            - application/msword
+            - application/excel
+            - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+            - application/vnd.ms-excel
+            - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            - application/vnd.ms-powerpoint
+            - application/vnd.openxmlformats-officedocument.presentationml.presentation
+            - image/jpeg
+            - image/pjpeg
+            - image/jpeg
+            - image/pjpeg
+            - image/png
+            - text/plain
+        data:
+          type: string
+    Note:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        attachment:
+          $ref: '#/components/schemas/Attachment'
+    ServiceRequest:
+      type: object
+      required:
+        - externalIdentifier      
+        - externalServiceCategory      
+        - reportedBy      
+        - affectedPerson      
+        - siteCode      
+        - locationCode      
+        - priority      
+        - requestType      
+        - title      
+      properties:
+        externalIdentifier:
+          type: string
+        externalServiceCategory:
+          type: string
+        reportedBy:
+          $ref: '#/components/schemas/Contact'
+        affectedPerson:
+          $ref: '#/components/schemas/Contact'
+        siteCode:
+          type: string
+        locationCode:
+          type: string
+        priority:
+          type: integer
+        requestType:
+          type: string
+          enum:
+            - request
+            - information
+        title:
+          type: string
+        description:
+          type: string
+        createdOn:
+          type: string
+        identifier:
+          type: string
+        status:
+          type: string
+        statusComment:
+          type: string
+        firstResponseFailureTime:
+          type: string
+          format: date-time
+          description: "First response required by SLA date time"
+        resolveByFailureTime:
+          type: string
+          format: date-time
+          description: "Resolution required by SLA date time"
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+    ServiceRequestResponse:
+      type: object
+      properties:
+        identifier:
+          type: string
+        externalIdentifier:
+          type: string
+    SiteResponse:
+      type: object
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: '#/components/schemas/Site'
+    LocationResponse:
+      type: object
+      properties:
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+    ExternalServiceCatalogueResponse:
+      type: object
+      properties:
+        serviceCatalogues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalServiceCategory'
+    ErrorResponse:
+      type: object
+      properties:
+        Message:
+          type: string
+        ExceptionMessage:
+          type: string        
+        ExceptionType:
+          type: string        
+        Detail:
+          type: string
