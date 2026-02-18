@@ -1,0 +1,107 @@
+openapi: 3.0.0
+info:
+  title: Service Request Subscriber API
+  description: Publish service request information to client subscribers
+  version: 1.0.0
+servers:
+  - url: 'http://ifm-out.sodexo.com/api/v1'
+# tags:
+#   - name: Service Request Subscriber
+#     description: Publish service request information to client subscribers
+paths:
+  /servicerequest/status:
+    post:
+      tags:
+        - service request
+      summary: 'Publish service request status update'
+      description: 'Publish service request status update to client subscriber endpoint.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestStatus'
+      responses:
+        '204':
+          description: 'provide service request created'
+        '400':
+          description: invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ServiceRequestStatus:
+      type: object
+      required:
+        - modifiedOn
+      properties:
+        identifier:
+          type: string
+          description: "iFM service request identifier"
+        externalIdentifier:
+          type: string
+          description: "External system service request identifier"
+        statuscode:
+          type: string
+        status:
+          type: string
+          enum:
+            - InProgress
+            - OnHold
+            - WaitingForDetails
+            - Researching
+            - ProblemSolved
+            - InformationProvided
+            - Canceled
+            - Merged
+        statusComment:
+          type: string
+        subStatus:
+          type: string
+        subStatusCode:
+          type: string
+        serviceCategory:
+          type: string
+        siteCode:
+          type: string
+        siteTimeZone:
+          type: string
+        locationCode:
+          type: string
+        priority:
+          type: integer
+        firstResponseFailureTime:
+          type: string
+          description: "First response required by SLA date time"
+          format: date-time
+        resolveByFailureTime:
+          type: string
+          description: "Resolution required by SLA date time"
+          format: date-time
+        actualResponseTime:
+          type: string
+          description: "Actual response date time"
+          format: date-time
+        actualResolveByTime:
+          type: string
+          description: "Actual resolution date time"
+          format: date-time
+        modifiedOn:
+          type: string
+          format: date-time
+        providerDueDate:
+          type: string
+          description: "Provider due date"
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        Message:
+          type: string
+        ExceptionMessage:
+          type: string        
+        ExceptionType:
+          type: string        
+        Detail:
+          type: string
