@@ -10,7 +10,7 @@ using Microsoft.Xrm.Sdk.Query;
 using Sodexo.iFM.Plugins.Manager;
 using Sodexo.iFM.Shared.EntityController;
 
-namespace Sodexo.iFM.Plugins.PluginSteps.WorkOrder
+namespace ABC.iFM.Plugins.PluginSteps.WorkOrder
 {
     public class PostWorkOrderSystemStatusChange : PluginBase
     {
@@ -51,7 +51,7 @@ namespace Sodexo.iFM.Plugins.PluginSteps.WorkOrder
             #endregion PreChecks
 
             string TraceMessage = "|Plugin:PostWorkOrderSystemStatusChange & Depth - " + localPluginContext.PluginExecutionContext.Depth + "|";
-            //Ravi SOnal: Why we need more than 1 depth
+            //Pritesh: Why we need more than 1 depth
             if (localPluginContext.PluginExecutionContext.Depth > 2)
             {
                 TraceMessage += "|Depth reached more than 2|";
