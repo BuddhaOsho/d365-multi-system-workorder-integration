@@ -1,0 +1,212 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "triggers": {
+      "HTTP": {
+        "type": "Http",
+        "inputs": {
+          "uri": "https://@{parameters('messageSerialisationService')}.azurewebsites.net/api/lock/trigger",
+          "method": "POST",
+          "body": {
+            "subscriptionName": "@parameters('subscriptionName')",
+            "taskName": "@parameters('taskName')",
+            "topicName": "@parameters('taskName')"
+          },
+          "authentication": "@parameters('logicAppAuthentication')"
+        },
+        "recurrence": {
+          "frequency": "Second",
+          "interval": 30
+        }
+      }
+    },
+"actions": {
+  "Decode": {
+    "type": "Compose",
+    "inputs": "@json(decodeBase64(triggerBody().ContentData))"
+  },
+
+  "Acquire_WorkorderLock": {
+    "type": "Http",
+    "inputs": {
+      "method": "POST",
+      "uri": "@parameters('lockServiceBaseUrl')/api/lock/acquire",
+      "authentication": "@parameters('logicAppAuthentication')",
+      "body": {
+        "Entity": "msdyn_workorders",
+        "EntityId": "@{outputs('Decode').source.id}",
+        "RunIdentifier": "@{triggerBody().MessageId}",
+        "TaskName": "@parameters('taskName')",
+        "Expiry": 20,
+        "CheckOnly": true
+      }
+    }
+  },
+
+  "Init_ErrorArray": {
+    "type": "InitializeVariable",
+    "inputs": {
+      "variables": [
+        { "name": "errorArray", "type": "Array" }
+      ]
+    }
+  },
+
+  "Init_WOUpdatesArray": {
+    "type": "InitializeVariable",
+    "inputs": {
+      "variables": [
+        { "name": "workorderUpdatesArray", "type": "Array", "value": [] }
+      ]
+    }
+  },
+
+  "Set_StatusArray": {
+    "type": "InitializeVariable",
+    "inputs": {
+      "variables": [
+        {
+          "name": "workOrderStatuses",
+          "type": "Array",
+          "value": [
+            "@parameters('workorderStatuses')['Open - Unscheduled']",
+            "@parameters('workorderStatuses')['Open - Scheduled']"
+          ]
+        }
+      ]
+    }
+  },
+
+  "Get_WorkOrder": {
+    "type": "Http",
+    "runAfter": {
+      "Init_ErrorArray": ["Succeeded"],
+      "Init_WOUpdatesArray": ["Succeeded"],
+      "Set_StatusArray": ["Succeeded"]
+    },
+    "inputs": {
+      "method": "GET",
+      "uri": "@parameters('d365BaseUrl')/api/workorder/@{outputs('Decode').source.id}",
+      "authentication": "@parameters('logicAppAuthentication')"
+    }
+  },
+
+  "Set_OwnerId": {
+    "type": "InitializeVariable",
+    "inputs": {
+      "variables": [
+        {
+          "name": "locationCode",
+          "type": "String",
+          "value": "@coalesce(body('Get_WorkOrder').ifm_roomid?.ifm_code, body('Get_WorkOrder').ifm_wingid?.ifm_code, body('Get_WorkOrder').ifm_floor_roofid?.ifm_code, body('Get_WorkOrder').ifm_building_externalareaid?.ifm_code )"
+        },
+        {
+          "name": "ownerid",
+          "type": "String",
+          "value": "@parameters('ownerRoutingParameter')"
+        }
+      ]
+    }
+  },
+
+  "WorkOrder_Exists": {
+    "type": "If",
+    "runAfter": { "Set_OwnerId": ["Succeeded"] },
+    "expression": "@equals(actions('Get_WorkOrder').outputs?.statusCode, 200)",
+    "actions": {
+      "If_ProviderDueDateSet": { "... sanitized logic ..." },
+      "Has_ServiceCategoryCodeChanged": { "... sanitized logic ..." },
+      "Has_PriorityChanged": { "... sanitized logic ..." },
+      "Is_StatusUpdate": { "... sanitized logic ..." },
+      "Has_LocationChanged": { "... sanitized logic ..." },
+      "If_WOUpdatesArrayNotEmpty": { "... sanitized logic ..." }
+    }
+  },
+
+  "Release_WorkorderLock": {
+    "type": "Http",
+    "runAfter": {
+      "WorkOrder_Exists": ["Succeeded", "Failed", "Skipped"]
+    },
+    "inputs": {
+      "method": "POST",
+      "uri": "@parameters('lockServiceBaseUrl')/api/lock/release",
+      "authentication": "@parameters('logicAppAuthentication')",
+      "body": {
+        "Entity": "msdyn_workorders",
+        "EntityId": "@{outputs('Decode').source.id}",
+        "RunIdentifier": "@{triggerBody().MessageId}",
+        "TaskName": "@parameters('taskName')"
+      }
+    }
+  },
+
+  "ForEach_Error": {
+    "type": "Foreach",
+    "foreach": "@variables('errorArray')",
+    "actions": {
+      "Compose_Error": {
+        "type": "Compose",
+        "inputs": {
+          "destination": {
+            "id": "@{body('Get_WorkOrder')?.msdyn_workorderid}",
+            "system": "D365"
+          },
+          "description": "@{item().description}",
+          "subject": "@{item().subject}"
+        }
+      },
+      "Send_Error": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['servicebus']['connectionId']"
+            }
+          },
+          "method": "POST",
+          "path": "/@{parameters('errorTopic')}/messages",
+          "body": {
+            "ContentData": "@{outputs('Compose_Error')}",
+            "ContentType": "text/json",
+            "Properties": {
+              "CorrelationId": "@triggerBody().Properties.CorrelationId"
+            },
+            "ContentTransferEncoding": "None"
+          }
+        }
+      }
+    }
+  },
+
+  "Terminate_Failures": {
+    "type": "Terminate",
+    "runAfter": {
+      "Release_WorkorderLock": ["Succeeded"],
+      "ForEach_Error": ["Succeeded"],
+      "WorkOrder_Exists": ["Failed"]
+    },
+    "inputs": {
+      "runStatus": "Failed",
+      "runError": {
+        "code": "WOStatusUpdateFailed",
+        "message": "@join(variables('errorArray'), ';')"
+      }
+    }
+  }
+},
+"parameters": {
+  "subscriptionName": { "type": "String", "defaultValue": "d365" },
+  "messageSerialisationService": { "type": "String" },
+  "taskName": { "type": "String" },
+  "d365BaseUrl": { "type": "String" },
+  "lockServiceBaseUrl": { "type": "String" },
+  "ownerRoutingParameter": { "type": "String" },
+  "srStatuses": { "type": "Object" },
+  "workorderStatuses": { "type": "Object" },
+  "logicAppAuthentication": { "type": "Object" },
+  "errorTopic": { "type": "String" },
+  "updateEventName": { "type": "String" },
+  "$connections": { "type": "Object" }
+}
